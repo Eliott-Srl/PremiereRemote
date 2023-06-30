@@ -1,58 +1,47 @@
 import { Utils } from "./Utils";
 
 export class EffectUtils {
-
-    static changeAudioLevel(clip: TrackItem, levelInDb: number) {
-      const levelInfo = clip.components[0].properties[1];
-      const level = 20 * Math.log(parseFloat(levelInfo.getValue())) * Math.LOG10E + 15;
-      const newLevel = level + levelInDb;
-      const encodedLevel = Math.min(Math.pow(10, (newLevel - 15)/20), 1.0);
-      levelInfo.setValue(encodedLevel, true);
-    }
-  
-    static changeAllAudioLevels(levelInDb: number) {
-      const currentSequence = app.project.activeSequence;
-      for (let i = 0; i < currentSequence.audioTracks.numTracks; i++) {
-        for (let j = 0; j < currentSequence.audioTracks[i].clips.numItems; j++) {
-            const currentClip = currentSequence.audioTracks[i].clips[j];
-            if(currentClip.isSelected()) {
-             this.changeAudioLevel(currentClip, levelInDb);
-            }
-        }
-      }
-    }
-  
-    static applyEffectOnFirstSelectedVideoClip(effectName: String) {
-      const clipInfo = Utils.getFirstSelectedClip(true)
-      const qeClip = Utils.getQEVideoClipByStart(clipInfo.trackIndex, clipInfo.clip.start.ticks)
+  static applyEffectOnSelection(effectName: String) {
+    Utils.applyFunctionOnSelectedClips(true, (QEclip, clip: TrackItem) => {
       var effect = qe.project.getVideoEffectByName(effectName);
-      qeClip.addVideoEffect(effect);
+      QEclip.addVideoEffect(effect);
+    });
+  }
   
-      // For better usability, always return the newest effects (this ones) properties! 
-      return clipInfo.clip.components[2].properties;
-    }
-  
-    static applyDropShadowPreset() { 
-      const shadowEffectProperties = this.applyEffectOnFirstSelectedVideoClip("Schlagschatten");
-      const opacity = shadowEffectProperties[1];
-      const softness = shadowEffectProperties[4];
-  
-      opacity.setValue(255, true);
-      softness.setValue(44, true);
-    }
-  
-    static applyBlurPreset() {
-      const blurEffectProperties = this.applyEffectOnFirstSelectedVideoClip("Gaußscher Weichzeichner");
-  
-      const blurriness = blurEffectProperties[0];
-      const repeatBorderPixels = blurEffectProperties[2];
+  static setZoom(zoom: number) {
+    Utils.applyFunctionOnSelectedClips(true, (clip: TrackItem) => {
+      const scaleInfo = clip.components[1].properties[1];
+      scaleInfo.setValue(zoom, true);
+    }, false);
+  }
+
+  static applyBlurEffect() {
+    Utils.applyFunctionOnSelectedClips(true, (QEclip, clip: TrackItem) => {
+      var effect = qe.project.getVideoEffectByName("Flou gaussien");
+      QEclip.addVideoEffect(effect);
+      var blurEffectProperties = clip.components[2].properties;
+      var blurriness = blurEffectProperties[0];
+      var repeatBorderPixels = blurEffectProperties[2];
   
       blurriness.setValue(42, true);
       repeatBorderPixels.setValue(true, true);
-    }
-  
-    static applyWarpStabilizer() {
-      this.applyEffectOnFirstSelectedVideoClip("Verkrümmungsstabilisierung");
-    }
-  
+    });
   }
+
+  static applyDropShadowPreset() {
+    Utils.applyFunctionOnSelectedClips(true, (QEclip, clip: TrackItem) => {
+      var effect = qe.project.getVideoEffectByName("Ombre portée");
+      QEclip.addVideoEffect(effect);
+      var shadowEffectProperties = clip.components[2].properties;
+      const opacity = shadowEffectProperties[1];
+      const softness = shadowEffectProperties[4];
+
+      opacity.setValue(255, true);
+      softness.setValue(44, true);
+    });
+  }
+
+  static applyWarpStabilizer() {
+    this.applyEffectOnSelection("Stabilisation");
+  }
+}
