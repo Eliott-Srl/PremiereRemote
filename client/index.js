@@ -64,7 +64,15 @@ function init() {
 
                 // Check query parameter count
                 if (parameters.length === params.length && params.length === propertyCount) {
-                    executeCommand(key, params, res);
+                    if (key === "showFunctionName") {
+                        document.getElementById("lastCommandContainer").innerHTML = params[0];
+
+                        csInterface.evalScript("host.showFunctionName(\"" + params[0] + "\")", function (functionResult) {
+                            res.json({ message: 'ok.', result: functionResult});
+                        });
+                    } else {
+                        executeCommand(key, params, res);
+                    }
                 } else {
                     res.json({ message: 'error. wrong parameters.' });
                 }
